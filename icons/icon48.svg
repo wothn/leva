@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="8" fill="#4285f4"/>
+  <text x="24" y="34" font-family="Arial" font-size="30" font-weight="bold" fill="white" text-anchor="middle">词</text>
+  <path d="M12 20 L36 20" stroke="white" stroke-width="2" fill="none"/>
+  <path d="M12 26 L36 26" stroke="white" stroke-width="2" fill="none"/>
+</svg>
