@@ -204,18 +204,57 @@ function updateTooltipContent(tooltip, definition) {
   let html = `
     <div class="tooltip-header">
       <span class="tooltip-word">${definition.word}</span>
+      <div class="tooltip-meta">`;
+  
+  // 添加词性信息
+  if (definition.partOfSpeech) {
+    html += `<span class="tooltip-pos">${definition.partOfSpeech}</span>`;
+  }
+  
+  // 添加语法形式信息 (如可数/不可数)
+  if (definition.grammaticalForm) {
+    html += `<span class="tooltip-gram">${definition.grammaticalForm}</span>`;
+  }
+  
+  // 添加词汇级别 (如 B2, C1)
+  if (definition.level) {
+    html += `<span class="tooltip-level">${definition.level}</span>`;
+  }
+  
+  html += `</div>
     </div>
   `;
   
-  // 添加音标信息（优先显示美式音标，如果没有则显示英式音标）
+  // 添加音标和发音按钮
   if (definition.phonetics) {
     html += '<div class="tooltip-phonetics">';
+    
+    // 添加美式音标和发音按钮
     if (definition.phonetics.us) {
-      html += `<span class="phonetic-us">美 ${definition.phonetics.us}</span>`;
+      html += '<div class="phonetic-item">';
+      html += `<span class="phonetic-us">美 /${definition.phonetics.us}/</span>`;
+      
+      // 如果有美式发音音频，添加播放按钮
+      if (definition.audio && definition.audio.us) {
+        html += `<span class="audio-btn audio-us" data-audio="${definition.audio.us}">🔊</span>`;
+      }
+      
+      html += '</div>';
     }
+    
+    // 添加英式音标和发音按钮
     if (definition.phonetics.uk) {
-      html += `<span class="phonetic-uk">英 ${definition.phonetics.uk}</span>`;
+      html += '<div class="phonetic-item">';
+      html += `<span class="phonetic-uk">英 /${definition.phonetics.uk}/</span>`;
+      
+      // 如果有英式发音音频，添加播放按钮
+      if (definition.audio && definition.audio.uk) {
+        html += `<span class="audio-btn audio-uk" data-audio="${definition.audio.uk}">🔊</span>`;
+      }
+      
+      html += '</div>';
     }
+    
     html += '</div>';
   }
 
@@ -224,9 +263,15 @@ function updateTooltipContent(tooltip, definition) {
     html += '<div class="tooltip-body">';
     html += '<ul class="tooltip-definitions">';
     
-    // 最多显示3个定义
-    definition.definitions.slice(0, 3).forEach((defItem, index) => {
+    // 展示所有定义（最多5个）
+    definition.definitions.slice(0, 5).forEach((defItem, index) => {
       html += '<li>';
+      
+      // 添加该定义的级别（如果与总体级别不同）
+      if (defItem.level && defItem.level !== definition.level) {
+        html += `<span class="def-level">${defItem.level}</span>`;
+      }
+      
       // 添加英文定义
       if (defItem.text) {
         html += `<div class="def-text">${index + 1}. ${defItem.text}</div>`;
@@ -237,14 +282,17 @@ function updateTooltipContent(tooltip, definition) {
         html += `<div class="def-trans">${defItem.translation}</div>`;
       }
       
-      // 添加例句（每个定义最多显示一个例句）
+      // 添加例句（最多显示2个例句）
       if (defItem.examples && defItem.examples.length > 0) {
-        const example = defItem.examples[0];
-        html += '<div class="tooltip-example">';
-        html += `<div class="eg-text">例: ${example.text}</div>`;
-        if (example.translation) {
-          html += `<div class="eg-trans">${example.translation}</div>`;
-        }
+        html += '<div class="tooltip-examples">';
+        defItem.examples.slice(0, 2).forEach(example => {
+          html += '<div class="tooltip-example">';
+          html += `<div class="eg-text">• ${example.text}</div>`;
+          if (example.translation) {
+            html += `<div class="eg-trans">${example.translation}</div>`;
+          }
+          html += '</div>';
+        });
         html += '</div>';
       }
       
@@ -257,10 +305,106 @@ function updateTooltipContent(tooltip, definition) {
     html += '<div class="tooltip-no-def">未找到释义</div>';
   }
 
+  // 添加来源信息
+  html += `
+    <div class="tooltip-footer">
+      <span class="tooltip-source">数据来源: Cambridge Dictionary</span>
+    </div>
+  `;
+
   tooltip.innerHTML = html;
+  
+  // 为音频按钮添加点击事件
+  if (tooltip) {
+    const audioButtons = tooltip.querySelectorAll('.audio-btn');
+    audioButtons.forEach(button => {
+      button.addEventListener('click', function(event) {
+        event.stopPropagation(); // 阻止事件冒泡
+        const audioUrl = this.getAttribute('data-audio');
+        if (audioUrl) {
+          playAudio(audioUrl);
+        }
+      });
+    });
+  }
 
   // 内容更新后重新定位
   positionTooltip(null, tooltip);
+}
+
+// 播放音频的函数
+function playAudio(url) {
+  // 检查URL是否为Cambridge Dictionary的路径
+  if (url.startsWith('/') || !url.startsWith('http')) {
+    // 这是一个相对路径，需要通过background脚本代理获取和播放
+    console.log('请求背景脚本播放音频:', url);
+    chrome.runtime.sendMessage({
+      action: 'requestAudioPlayback', // 新的 action 名称
+      audioPath: url
+    }, response => {
+      // 可以选择性地处理来自 background 的响应，例如播放失败的通知
+      if (chrome.runtime.lastError) {
+        console.error('请求播放音频失败:', chrome.runtime.lastError.message);
+        showAudioErrorNotification();
+      } else if (response && !response.success) {
+        console.error('背景脚本报告音频播放失败:', response.error);
+        showAudioErrorNotification();
+      } else {
+        console.log('音频播放请求已发送');
+      }
+    });
+  } else {
+    // 直接URL（理论上不应发生，但保留）
+    try {
+      const audioElement = new Audio(url);
+      audioElement.onerror = function() {
+        console.error('直接播放音频失败:', url);
+        showAudioErrorNotification();
+      };
+      audioElement.play().catch(error => {
+        console.error('直接播放音频时出错:', error);
+        showAudioErrorNotification();
+      });
+    } catch (error) {
+      console.error('创建直接播放的音频元素失败:', error);
+      showAudioErrorNotification();
+    }
+  }
+}
+
+// 显示音频错误通知
+function showAudioErrorNotification() {
+  const notification = document.createElement('div');
+  notification.className = 'audio-error-notification';
+  notification.textContent = '音频加载失败';
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(211, 47, 47, 0.9);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    z-index: 10000;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  `;
+  document.body.appendChild(notification);
+  
+  // 显示并淡出通知
+  setTimeout(() => {
+    notification.style.opacity = '1';
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 1500);
+  }, 0);
 }
 
 // 定位tooltip

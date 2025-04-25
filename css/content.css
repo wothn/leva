@@ -49,9 +49,7 @@
   padding-bottom: 8px;
   border-bottom: 1px solid #f0f0f0; /* 更浅的分割线 */
   display: flex;
-  align-items: center;
-  justify-content: space-between; /* 单词和音标分布在两侧 */
-  flex-wrap: wrap; /* 在小屏幕上允许换行 */
+  flex-direction: column; /* 修改为列布局 */
 }
 
 .tooltip-word {
@@ -61,7 +59,42 @@
   margin-right: 8px;
 }
 
-/* 音标样式 */
+/* 单词元数据：词性、词汇级别等 */
+.tooltip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.tooltip-pos {
+  color: #5f6368;
+  font-style: italic;
+  background-color: #f1f3f4;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tooltip-gram {
+  color: #5f6368;
+  font-size: 12px;
+  background-color: #f1f3f4;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.tooltip-level {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* 音标和发音区域的样式 */
 .tooltip-phonetics {
   display: flex;
   flex-wrap: wrap;
@@ -71,10 +104,17 @@
   font-size: 13px;
 }
 
-.phonetic-us, .phonetic-uk {
+.phonetic-item {
+  display: flex;
+  align-items: center;
   background-color: #f1f3f4;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 4px;
+  gap: 5px; /* 音标和音频按钮之间的间距 */
+}
+
+.phonetic-us, .phonetic-uk {
+  color: #5f6368;
 }
 
 .phonetic-us {
@@ -83,6 +123,53 @@
 
 .phonetic-uk {
   color: #1a73e8; /* 英式音标蓝色 */
+}
+
+/* 音频播放按钮样式 */
+.audio-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  user-select: none; /* 防止文本被选中 */
+}
+
+.audio-btn:hover {
+  transform: scale(1.1);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.audio-btn:active {
+  transform: scale(0.95);
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.audio-us {
+  color: #d93025; /* 美式发音红色 */
+}
+
+.audio-uk {
+  color: #1a73e8; /* 英式发音蓝色 */
+}
+
+/* 音频错误提示样式 */
+.audio-error-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(211, 47, 47, 0.9);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  z-index: 10001;
+  font-size: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .tooltip-body {
@@ -109,6 +196,17 @@
   border-bottom: none;
 }
 
+.def-level {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 0px 4px;
+  border-radius: 3px;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
 .def-text {
   margin-bottom: 3px;
 }
@@ -117,6 +215,10 @@
   color: #0f9d58; /* 绿色显示中文定义 */
   font-size: 13px;
   margin-bottom: 6px;
+}
+
+.tooltip-examples {
+  margin-top: 8px;
 }
 
 .tooltip-example {
@@ -136,4 +238,18 @@
   color: #0f9d58; /* 绿色显示中文例句 */
   font-size: 12px;
   margin-top: 4px;
+}
+
+/* 添加底部版权信息 */
+.tooltip-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 11px;
+  color: #9aa0a6;
+  text-align: right;
+}
+
+.tooltip-source {
+  font-style: italic;
 }

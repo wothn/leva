@@ -114,7 +114,7 @@ function addWordToVocabulary(word, tabId) {
   });
 }
 
-// 监听来自内容脚本的消息
+// 监听来自内容脚本或弹出窗口的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'fetchWordDefinition') {
     console.log(`接收到获取单词定义请求: "${request.word}"，来自标签页 ${sender.tab?.id}`);
@@ -158,11 +158,100 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true; // 表示将异步发送响应
   }
+  // 处理来自 content.js 的音频播放请求
+  else if (request.action === 'requestAudioPlayback') {
+    console.log('Background: 收到音频播放请求:', request.audioPath);
+    handleAudioPlaybackRequest(request.audioPath)
+      .then(() => sendResponse({ success: true }))
+      .catch(error => {
+        console.error('Background: 处理音频播放请求失败:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true; // 异步响应
+  }
+  // 处理来自 offscreen.js 的音频播放错误报告 (可选)
+  else if (request.action === 'audioPlaybackError') {
+     console.error('Background: Offscreen 报告音频播放错误:', request.error);
+     // 可以选择将错误转发给内容脚本
+     // if (sender.origin && sender.origin.startsWith('chrome-extension://')) {
+     //   // 查找可能需要通知的标签页... 比较复杂，暂时只记录日志
+     // }
+  }
   // 保留其他可能的监听器逻辑
   // else if (request.action === '...') { ... }
 
-   return false; // 对于非异步消息，返回false或undefined
+   return false; // 对于非异步消息或未处理的消息
 });
+
+// --- 新增函数：处理音频播放请求 ---
+async function handleAudioPlaybackRequest(audioPath) {
+  if (!audioPath) {
+    throw new Error('音频路径无效');
+  }
+  
+  // 如果路径不是以/开头，添加/
+  const cleanPath = audioPath.startsWith('/') ? audioPath : '/' + audioPath;
+  // 构建完整的URL
+  const audioUrl = 'https://dictionary.cambridge.org' + cleanPath;
+
+  try {
+    console.log('Background: 正在准备音频播放:', audioUrl);
+    
+    // 确保 Offscreen 文档存在
+    await ensureOffscreenDocument();
+
+    // 发送音频URL到 Offscreen 文档进行播放，而不是发送二进制数据
+    chrome.runtime.sendMessage({
+      target: 'offscreen', // 目标标识符
+      action: 'playAudioOffscreen',
+      audioUrl: audioUrl    // 发送URL而不是二进制数据
+    });
+
+  } catch (error) {
+    console.error('Background: 准备音频播放失败:', error);
+    throw error; // 重新抛出错误，以便调用者知道失败了
+  }
+}
+
+// --- 新增或修改：确保 Offscreen 文档存在的函数 ---
+let creatingOffscreenPromise = null; // 防止并发创建
+
+async function ensureOffscreenDocument() {
+  const offscreenUrl = chrome.runtime.getURL('offscreen.html');
+  const existingContexts = await chrome.runtime.getContexts({
+    contextTypes: ['OFFSCREEN_DOCUMENT'],
+    documentUrls: [offscreenUrl] // 查找特定 URL 的文档
+  });
+
+  if (existingContexts.length > 0) {
+    console.log('Background: Offscreen 文档已存在');
+    return;
+  }
+
+  // 如果正在创建，则等待现有 Promise 完成
+  if (creatingOffscreenPromise) {
+    console.log('Background: 等待正在进行的 Offscreen 文档创建...');
+    await creatingOffscreenPromise;
+    return;
+  }
+
+  console.log('Background: 创建 Offscreen 文档...');
+  creatingOffscreenPromise = chrome.offscreen.createDocument({
+    url: offscreenUrl,
+    reasons: [chrome.offscreen.Reason.DOM_PARSER, chrome.offscreen.Reason.AUDIO_PLAYBACK], // 添加 AUDIO_PLAYBACK 原因
+    justification: '解析词典 HTML 和播放音频'
+  });
+
+  try {
+    await creatingOffscreenPromise;
+    console.log('Background: Offscreen 文档创建成功');
+  } catch (error) {
+    console.error('Background: 创建 Offscreen 文档失败:', error);
+    throw error; // 抛出错误
+  } finally {
+    creatingOffscreenPromise = null; // 重置 Promise 状态
+  }
+}
 
 // 获取单词定义
 async function fetchWordDefinition(word, tabId = null) {
