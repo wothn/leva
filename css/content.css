@@ -4,6 +4,7 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: background-color 0.3s;
+  position: relative; /* 为tooltip定位提供基础 */
 }
 
 .vocabulary-highlight:hover {
@@ -12,22 +13,127 @@
 
 .vocabulary-tooltip {
   position: absolute;
-  background-color: #333;
-  color: #fff;
-  padding: 5px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  z-index: 9999;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  background-color: #fff; /* 改为白色背景 */
+  color: #333; /* 深灰色文字 */
+  padding: 12px 15px; /* 增加内边距 */
+  border-radius: 8px; /* 更圆的边角 */
+  font-size: 14px;
+  line-height: 1.6; /* 增加行高 */
+  z-index: 10000; /* 确保在最上层 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 更柔和的阴影 */
+  width: 350px; /* 增加宽度以适应更多内容 */
+  max-width: 90vw; /* 最大宽度不超过视口 */
+  transform: translateX(-50%); /* 水平居中 */
+  border: 1px solid #eee; /* 添加细边框 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  opacity: 1; /* 默认可见，由JS控制显示和隐藏 */
+  visibility: visible;
+  pointer-events: auto; /* 允许鼠标交互 */
 }
 
-.vocabulary-tooltip:after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #333 transparent transparent transparent;
+.tooltip-loading,
+.tooltip-error,
+.tooltip-no-def {
+  padding: 10px;
+  text-align: center;
+  color: #888;
+  font-style: italic;
+}
+
+.tooltip-error {
+  color: #d32f2f; /* 红色表示错误 */
+}
+
+.tooltip-header {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0; /* 更浅的分割线 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 单词和音标分布在两侧 */
+  flex-wrap: wrap; /* 在小屏幕上允许换行 */
+}
+
+.tooltip-word {
+  font-weight: 600; /* 稍粗的字体 */
+  font-size: 18px; /* 更大字号 */
+  color: #1a73e8; /* 蓝色 */
+  margin-right: 8px;
+}
+
+/* 音标样式 */
+.tooltip-phonetics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #5f6368; /* Google灰色 */
+  font-size: 13px;
+}
+
+.phonetic-us, .phonetic-uk {
+  background-color: #f1f3f4;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.phonetic-us {
+  color: #d93025; /* 美式音标红色 */
+}
+
+.phonetic-uk {
+  color: #1a73e8; /* 英式音标蓝色 */
+}
+
+.tooltip-body {
+  font-size: 14px;
+  max-height: 350px; /* 限制最大高度 */
+  overflow-y: auto; /* 内容过多时显示滚动条 */
+}
+
+.tooltip-definitions {
+  margin: 0;
+  padding: 0;
+  list-style-type: none; /* 移除默认列表样式 */
+}
+
+.tooltip-definitions li {
+  margin-bottom: 12px; /* 增加列表项间距 */
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #f0f0f0; /* 虚线分隔每个定义 */
+}
+
+.tooltip-definitions li:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.def-text {
+  margin-bottom: 3px;
+}
+
+.def-trans {
+  color: #0f9d58; /* 绿色显示中文定义 */
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.tooltip-example {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.eg-text {
+  color: #5f6368;
+  font-style: italic;
+}
+
+.eg-trans {
+  color: #0f9d58; /* 绿色显示中文例句 */
+  font-size: 12px;
+  margin-top: 4px;
 }

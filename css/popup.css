@@ -19,7 +19,8 @@ h1 {
 
 .actions {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px;
   margin-bottom: 10px;
 }
 
@@ -31,10 +32,20 @@ button {
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+  flex: 1;
+  min-width: 80px;
 }
 
 button:hover {
   background-color: #3367d6;
+}
+
+#clearCache {
+  background-color: #ff9800;
+}
+
+#clearCache:hover {
+  background-color: #f57c00;
 }
 
 .search-box {
@@ -90,4 +101,22 @@ li:last-child {
   padding: 10px;
   text-align: center;
   color: #888;
+}
+
+.notification {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(50, 50, 50, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: opacity 0.5s ease;
+  z-index: 1000;
+}
+
+.fade-out {
+  opacity: 0;
 }

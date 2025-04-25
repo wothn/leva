@@ -3,7 +3,7 @@
   "name": "生词本",
   "version": "1.0",
   "description": "收集并高亮显示网页上的生词",
-  "permissions": ["storage", "contextMenus", "activeTab", "notifications"],
+  "permissions": ["storage", "contextMenus", "activeTab", "notifications", "offscreen"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -26,5 +26,11 @@
   ],
   "background": {
     "service_worker": "js/background.js"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*", "css/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
