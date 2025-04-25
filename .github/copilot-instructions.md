@@ -6,6 +6,7 @@
   - Chrome Extensions API
   - Context Menus API
   - Notifications API
+  - Offscreen API
 
 ## 技术实现
 
@@ -33,7 +34,19 @@
 - 提供搜索过滤功能
 - 支持删除单个生词
 - 支持一键清空所有生词
+- 支持清空单词释义缓存
 - 提供导出生词列表功能
+
+### 5. 悬浮释义功能
+
+- 当用户鼠标悬停在高亮单词上时触发释义查询
+- 通过 Cambridge Dictionary 获取单词的英汉/英英释义
+- 使用 Offscreen API 解析词典网页提取关键信息
+- 显示包含音标、多个释义和例句的悬浮提示框
+- 实现缓存机制减少重复请求，提高性能
+- 提供优雅的加载动画和精美的界面设计
+- 根据页面布局智能定位悬浮提示框位置
+
 ## 项目结构
 
 ```
@@ -41,18 +54,21 @@
 │
 ├── manifest.json        # 扩展配置文件
 ├── popup.html           # 扩展弹出窗口HTML
+├── offscreen.html       # 用于离屏DOM解析的HTML
+├── README.md            # 项目说明文档
 │
 ├── css/
-│   ├── content.css      # 网页内容样式（用于高亮显示）
+│   ├── content.css      # 网页内容样式（用于高亮和悬浮提示）
 │   └── popup.css        # 扩展弹出窗口样式
 │
 ├── icons/
-│   ├── icon16.svg       # 16x16像素图标
-│   ├── icon48.svg       # 48x48像素图标
-│   └── icon128.svg      # 128x128像素图标
+│   ├── icon16.png       # 16x16像素图标
+│   ├── icon48.png       # 48x48像素图标
+│   └── icon128.png      # 128x128像素图标
 │
 └── js/
-    ├── background.js    # 后台脚本（处理右键菜单等）
-    ├── content.js       # 内容脚本（网页高亮实现）
+    ├── background.js    # 后台脚本（处理右键菜单、词典查询等）
+    ├── content.js       # 内容脚本（网页高亮和悬浮提示实现）
+    ├── offscreen.js     # 离屏页面脚本（处理HTML解析）
     └── popup.js         # 弹出窗口脚本（生词本管理）
 ```
