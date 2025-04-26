@@ -1,6 +1,7 @@
 当你完成某项值得被记录的功能时请在这里记录，方便后来者快速理解功能和实现逻辑
 ## 开发技术
 
+- **开发环境**：Windows10 命令行 powershell
 - **前端**：HTML, CSS, JavaScript
 - **存储**：Chrome Storage API
 - **浏览器API**：
@@ -73,3 +74,18 @@
     ├── offscreen.js     # 离屏页面脚本（处理HTML解析）
     └── popup.js         # 弹出窗口脚本（生词本管理）
 ```
+
+## 使用Vite打包Chrome扩展
+
+项目使用Vite作为构建工具，替代了之前考虑的Webpack。Vite提供了更快的开发体验和更简洁的配置。
+
+### 关键配置：
+
+1. 使用@crxjs/vite-plugin插件处理Chrome扩展特有的manifest.json
+2. 配置了多入口点：background、content、popup和offscreen
+3. 设置了资源输出路径，保持了与原始项目结构一致的文件组织
+4. 添加了开发服务器配置，支持热更新开发
+
+### 开发命令：
+- `npm run dev`：启动开发服务器
+- `npm run build`：构建生产版本扩展

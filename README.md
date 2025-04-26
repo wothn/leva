@@ -79,6 +79,7 @@
 
 ## 开发技术
 
+- **开发环境**：Windows10 命令行 powershell
 - **前端**：HTML, CSS, JavaScript
 - **存储**：Chrome Storage API
 - **浏览器API**：
@@ -86,6 +87,47 @@
   - Context Menus API
   - Notifications API
   - Offscreen API
+<<<<<<< HEAD
+=======
+
+## 打包使用说明
+
+本项目使用Vite作为构建工具，使用@crxjs/vite-plugin插件处理Chrome扩展打包。
+
+### 环境准备
+
+1. 确保安装了Node.js (建议v16+)和npm
+2. 克隆仓库后，安装依赖：
+   ```bash
+   npm install
+   ```
+
+### 开发模式
+
+启动开发服务器，支持热更新：
+```bash
+npm run dev
+```
+
+开发时可以通过Chrome扩展管理页面加载`dist`文件夹进行测试。
+
+### 构建生产版本
+
+构建优化后的生产版本：
+```bash
+npm run build
+```
+
+构建完成后，`dist`目录包含了可以直接安装使用的Chrome扩展。
+
+### 安装构建版本
+
+1. 打开Chrome浏览器，访问`chrome://extensions/`
+2. 开启右上角的"开发者模式"
+3. 点击"加载已解压的扩展程序"
+4. 选择项目的`dist`目录
+5. 扩展安装成功后即可使用
+>>>>>>> 00131b9212354aaea970cabfa88c2cfd11958135
 
 ## 未来改进
 
