@@ -61,19 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
   clearCacheBtn.addEventListener('click', () => {
     if (confirm('确定要清除所有单词释义的缓存吗？这不会删除您的生词，但会重置所有单词释义的缓存数据。')) {
       chrome.storage.local.set({ wordDefinitions: {} }, () => {
-        // 显示清除成功的消息
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.textContent = '释义缓存已清除';
-        document.body.appendChild(notification);
-        
-        // 2秒后移除通知
-        setTimeout(() => {
-          notification.classList.add('fade-out');
-          setTimeout(() => {
-            document.body.removeChild(notification);
-          }, 500);
-        }, 2000);
+        // 移除直接在popup中显示的通知，只保留页面中的通知
         
         // 通知当前页面刷新（添加错误处理）
         sendMessageToCurrentTab({ action: 'definitionCacheCleared' });
