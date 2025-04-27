@@ -7,7 +7,42 @@
   position: relative; /* 为tooltip定位提供基础 */
 }
 
+/* 暗黑模式下的高亮样式 */
+@media (prefers-color-scheme: dark) {
+  .vocabulary-highlight {
+    background-color: #775500; /* 暗黑模式下用较深的黄色 */
+    color: #ffffff; /* 暗黑模式下文字为白色 */
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2); /* 明亮的边框 */
+  }
+  
+  .vocabulary-highlight:hover {
+    background-color: #886600; /* 暗黑模式下鼠标悬停时颜色更深一些 */
+  }
+}
+
 .vocabulary-highlight:hover {
+  background-color: #ffd700;
+}
+
+/* 添加自定义类，用于脚本动态切换暗黑模式高亮 */
+.vocabulary-highlight.dark-mode {
+  background-color: #775500; 
+  color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.vocabulary-highlight.dark-mode:hover {
+  background-color: #886600;
+}
+
+/* 添加自定义类，用于脚本动态切换亮色模式高亮 */
+.vocabulary-highlight.light-mode {
+  background-color: #ffff00;
+  color: #000000;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.vocabulary-highlight.light-mode:hover {
   background-color: #ffd700;
 }
 
@@ -29,6 +64,137 @@
   opacity: 1; /* 默认可见，由JS控制显示和隐藏 */
   visibility: visible;
   pointer-events: auto; /* 允许鼠标交互 */
+}
+
+/* 暗黑模式下的tooltip样式 */
+@media (prefers-color-scheme: dark) {
+  .vocabulary-tooltip {
+    background-color: #242526; /* 暗黑模式背景色 */
+    color: #e4e6eb; /* 暗黑模式文字颜色 */
+    border: 1px solid #3e4042; /* 暗黑模式边框 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* 更深的阴影 */
+  }
+  
+  .tooltip-header {
+    border-bottom: 1px solid #3e4042; /* 更深的分割线 */
+  }
+  
+  .tooltip-word {
+    color: #4991e5; /* 暗黑模式下的蓝色 */
+  }
+  
+  .tooltip-pos, .tooltip-gram {
+    background-color: #3a3b3c;
+    color: #b0b3b8;
+  }
+  
+  .tooltip-level {
+    background-color: #263850;
+    color: #4991e5;
+  }
+  
+  .phonetic-item {
+    background-color: #3a3b3c;
+  }
+  
+  .tooltip-definitions li {
+    border-bottom: 1px dashed #3e4042;
+  }
+  
+  .def-level {
+    background-color: #263850;
+    color: #4991e5;
+  }
+  
+  .def-trans {
+    color: #2bac76; /* 暗色模式下的绿色 */
+  }
+  
+  .tooltip-example {
+    background-color: #323436;
+  }
+  
+  .eg-text {
+    color: #b0b3b8;
+  }
+  
+  .eg-trans {
+    color: #2bac76;
+  }
+  
+  .tooltip-footer {
+    border-top: 1px solid #3e4042;
+    color: #797d84;
+  }
+}
+
+/* 自定义类，用于JavaScript动态切换暗黑模式 */
+.vocabulary-tooltip.dark-mode {
+  background-color: #242526;
+  color: #e4e6eb;
+  border: 1px solid #3e4042;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.vocabulary-tooltip.dark-mode .tooltip-header {
+  border-bottom: 1px solid #3e4042;
+}
+
+.vocabulary-tooltip.dark-mode .tooltip-word {
+  color: #4991e5;
+}
+
+.vocabulary-tooltip.dark-mode .tooltip-pos,
+.vocabulary-tooltip.dark-mode .tooltip-gram {
+  background-color: #3a3b3c;
+  color: #b0b3b8;
+}
+
+.vocabulary-tooltip.dark-mode .tooltip-level {
+  background-color: #263850;
+  color: #4991e5;
+}
+
+.vocabulary-tooltip.dark-mode .phonetic-item {
+  background-color: #3a3b3c;
+}
+
+.vocabulary-tooltip.dark-mode .tooltip-definitions li {
+  border-bottom: 1px dashed #3e4042;
+}
+
+.vocabulary-tooltip.dark-mode .def-level {
+  background-color: #263850;
+  color: #4991e5;
+}
+
+.vocabulary-tooltip.dark-mode .def-trans {
+  color: #2bac76;
+}
+
+.vocabulary-tooltip.dark-mode .tooltip-example {
+  background-color: #323436;
+}
+
+.vocabulary-tooltip.dark-mode .eg-text {
+  color: #b0b3b8;
+}
+
+.vocabulary-tooltip.dark-mode .eg-trans {
+  color: #2bac76;
+}
+
+.vocabulary-tooltip.dark-mode .tooltip-footer {
+  border-top: 1px solid #3e4042;
+  color: #797d84;
+}
+
+/* 明亮模式的特定类 */
+.vocabulary-tooltip.light-mode {
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #eee;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .tooltip-loading,

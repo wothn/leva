@@ -4,7 +4,7 @@
  */
 
 import { applyHighlights, removeHighlights, highlightWords, isInNotification } from './highlight.js';
-import { setupHighlightEvents, hideTooltip, updateTooltipContent, getTooltipElement } from './tooltip.js';
+import { setupHighlightEvents, hideTooltip, updateTooltipContent, getTooltipElement, setupDarkModeListener } from './tooltip.js';
 import { showAudioErrorNotification } from './audio-ui.js';
 
 // 全局高亮状态
@@ -321,10 +321,12 @@ function initialize() {
     document.addEventListener('DOMContentLoaded', () => {
       initializeHighlight();
       initializeListeners();
+      setupDarkModeListener(); // 初始化暗黑模式监听器
     });
   } else {
     initializeHighlight();
     initializeListeners();
+    setupDarkModeListener(); // 初始化暗黑模式监听器
   }
 }
 

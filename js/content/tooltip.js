@@ -5,6 +5,7 @@
 
 import { positionTooltip } from './utils.js';
 import { requestAudioPlayback } from './audio-ui.js';
+import { isDarkMode } from './highlight.js'; // 导入暗黑模式检测函数
 
 let tooltipElement = null; // 用于存储tooltip元素引用
 let tooltipTimeout = null; // 用于控制tooltip显示延时
@@ -54,6 +55,14 @@ export function showTooltip(element, word) {
   // 创建tooltip元素
   tooltipElement = document.createElement('div');
   tooltipElement.className = 'vocabulary-tooltip';
+  
+  // 检测是否为暗黑模式，应用相应的类
+  if (isDarkMode()) {
+    tooltipElement.classList.add('dark-mode');
+  } else {
+    tooltipElement.classList.add('light-mode');
+  }
+  
   tooltipElement.dataset.word = word; // 存储当前单词，用于后续更新
   tooltipElement.innerHTML = `<div class="tooltip-loading">正在加载 "${word}" 的释义...</div>`; // 初始显示加载状态
 
@@ -253,4 +262,36 @@ export function setupHighlightEvents() {
 // 获取当前tooltip元素
 export function getTooltipElement() {
   return tooltipElement;
+}
+
+// 添加MutationObserver监听暗黑模式的变化
+let darkModeObserver = null;
+export function setupDarkModeListener() {
+  // 如果已经有了观察器，先断开连接
+  if (darkModeObserver) {
+    darkModeObserver.disconnect();
+  }
+  
+  // 创建一个新的观察器来监视文档元素上的类名变化
+  darkModeObserver = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      // 如果类属性发生变化，检查是否需要更新tooltip的暗黑模式
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        // 如果当前有tooltip，更新其暗黑模式状态
+        if (tooltipElement) {
+          if (isDarkMode()) {
+            tooltipElement.classList.add('dark-mode');
+            tooltipElement.classList.remove('light-mode');
+          } else {
+            tooltipElement.classList.add('light-mode');
+            tooltipElement.classList.remove('dark-mode');
+          }
+        }
+      }
+    });
+  });
+
+  // 开始观察文档元素和body元素的类变化
+  darkModeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  darkModeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 }
