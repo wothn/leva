@@ -3,12 +3,16 @@
  * 负责初始化各模块和处理消息通信
  */
 
-import { applyHighlights, removeHighlights } from './highlight.js';
+import { applyHighlights, removeHighlights, highlightWords, isInNotification } from './highlight.js';
 import { setupHighlightEvents, hideTooltip, updateTooltipContent, getTooltipElement } from './tooltip.js';
 import { showAudioErrorNotification } from './audio-ui.js';
 
 // 全局高亮状态
 let highlightEnabled = true;
+// 保存单词列表，以便动态加载的内容可以使用
+let vocabularyWords = [];
+// MutationObserver 实例
+let observer = null;
 
 // 初始化高亮功能
 function initializeHighlight() {
@@ -18,21 +22,127 @@ function initializeHighlight() {
     console.log('生词本扩展: 获取存储数据', result);
     highlightEnabled = result.highlightEnabled !== false; // 默认为 true
     const vocabulary = result.vocabulary || {};
-    const wordsArray = Object.keys(vocabulary);
+    vocabularyWords = Object.keys(vocabulary);
     
-    console.log(`生词本扩展: 高亮状态=${highlightEnabled}, 生词数量=${wordsArray.length}`);
+    console.log(`生词本扩展: 高亮状态=${highlightEnabled}, 生词数量=${vocabularyWords.length}`);
     
-    if (highlightEnabled && wordsArray.length > 0) {
+    if (highlightEnabled && vocabularyWords.length > 0) {
       // 确保在DOM准备好后应用高亮
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
           applyHighlights();
+          // 设置 MutationObserver 监视新内容
+          setupMutationObserver();
         });
       } else {
         applyHighlights();
+        // 设置 MutationObserver 监视新内容
+        setupMutationObserver();
       }
     }
   });
+
+  // 监听 storage 变化，更新单词列表和高亮状态
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local') {
+      let needRehighlight = false;
+      
+      // 检查高亮状态是否改变
+      if (changes.highlightEnabled) {
+        const newState = changes.highlightEnabled.newValue !== false;
+        if (newState !== highlightEnabled) {
+          highlightEnabled = newState;
+          needRehighlight = true;
+          
+          if (!highlightEnabled) {
+            // 关闭高亮时断开 observer
+            disconnectMutationObserver();
+          }
+        }
+      }
+      
+      // 检查生词列表是否改变
+      if (changes.vocabulary) {
+        const newVocabulary = changes.vocabulary.newValue || {};
+        vocabularyWords = Object.keys(newVocabulary);
+        needRehighlight = true;
+      }
+      
+      // 如果需要更新高亮
+      if (needRehighlight) {
+        console.log(`生词本扩展: 存储变化，重新应用高亮状态=${highlightEnabled}, 生词数量=${vocabularyWords.length}`);
+        if (highlightEnabled && vocabularyWords.length > 0) {
+          applyHighlights();
+          setupMutationObserver(); // 确保观察者使用最新配置
+        } else if (!highlightEnabled) {
+          removeHighlights();
+        }
+      }
+    }
+  });
+}
+
+// 设置 MutationObserver 监视动态加载的内容
+function setupMutationObserver() {
+  // 如果高亮未启用或词表为空，不设置观察者
+  if (!highlightEnabled || vocabularyWords.length === 0) {
+    disconnectMutationObserver();
+    return;
+  }
+  
+  // 如果已有观察者，先断开连接
+  disconnectMutationObserver();
+  
+  console.log('生词本扩展: 设置 MutationObserver 监视动态加载内容');
+  
+  // 创建新观察者
+  observer = new MutationObserver((mutations) => {
+    // 保存需要处理的新节点
+    const newNodes = new Set();
+    
+    // 遍历所有变化
+    mutations.forEach(mutation => {
+      // 只处理节点添加类型的变化
+      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+        mutation.addedNodes.forEach(node => {
+          // 只处理元素节点，跳过文本节点、脚本、样式等
+          if (node.nodeType === Node.ELEMENT_NODE && 
+              node.tagName !== 'SCRIPT' && 
+              node.tagName !== 'STYLE' && 
+              !node.classList.contains('vocabulary-highlight') &&
+              !isInNotification(node)) {
+            newNodes.add(node);
+          }
+        });
+      }
+    });
+    
+    // 如果有新节点添加，对它们应用高亮
+    if (newNodes.size > 0) {
+      console.log(`生词本扩展: 检测到 ${newNodes.size} 个新元素加载，应用高亮`);
+      newNodes.forEach(node => {
+        // 确保节点仍在文档中
+        if (document.contains(node)) {
+          highlightWords(vocabularyWords, highlightEnabled, node);
+        }
+      });
+    }
+  });
+  
+  // 开始观察 document.body
+  observer.observe(document.body, {
+    childList: true,  // 监视子节点的添加或移除
+    subtree: true     // 监视整个子树的变化
+  });
+}
+
+// 断开 MutationObserver 连接
+function disconnectMutationObserver() {
+  if (observer) {
+    console.log('生词本扩展: 断开 MutationObserver 连接');
+    observer.disconnect();
+    observer = null;
+  }
 }
 
 // 初始化事件监听
@@ -78,8 +188,10 @@ function handleToggleHighlight(state) {
   console.log(`生词本扩展: 切换高亮状态=${highlightEnabled}`);
   if (highlightEnabled) {
     applyHighlights();
+    setupMutationObserver(); // 恢复观察者
   } else {
     removeHighlights();
+    disconnectMutationObserver(); // 断开观察者
   }
 }
 
@@ -89,6 +201,7 @@ function handleRefreshHighlights() {
   console.log('生词本扩展: 刷新高亮');
   if (highlightEnabled) {
     applyHighlights();
+    setupMutationObserver(); // 确保观察者正常工作
   }
 }
 
@@ -227,5 +340,7 @@ export {
   handleWordDefinitionResult,
   handleDefinitionCacheCleared,
   handleWordAdded,
-  handleWordAlreadyExists
+  handleWordAlreadyExists,
+  setupMutationObserver,
+  disconnectMutationObserver
 };

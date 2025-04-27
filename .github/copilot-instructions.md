@@ -89,3 +89,16 @@
 ### 开发命令：
 - `npm run dev`：启动开发服务器
 - `npm run build`：构建生产版本扩展
+
+## MutationObserver 实现动态内容高亮
+
+### 功能描述
+- 通过 MutationObserver API 监视 DOM 变化
+- 自动对动态加载的内容（如 Reddit 评论）应用生词高亮
+- 智能过滤无需处理的节点，提高性能和可靠性
+
+### 实现要点
+- 修改 highlightWords 函数支持局部高亮指定元素
+- 使用 Set 数据结构避免重复处理相同节点
+- 在高亮状态变化时智能管理 MutationObserver 连接/断开
+- 增强错误处理和节点有效性检查，提高稳定性
