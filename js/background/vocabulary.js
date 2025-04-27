@@ -5,17 +5,20 @@
 
 // 添加单词到词汇表
 export function addWordToVocabulary(word, tabId) {
-  console.log(`尝试添加单词 "${word}" 到生词本，来自标签页 ${tabId}`);
+  // 将单词转换为小写以统一格式
+  const normalizedWord = word.toLowerCase().trim();
+  
+  console.log(`尝试添加单词 "${normalizedWord}" 到生词本，来自标签页 ${tabId}`);
   chrome.storage.local.get(['vocabulary'], (result) => {
     const vocabulary = result.vocabulary || {};
 
     // 检查单词是否已存在
-    if (vocabulary[word]) {
+    if (vocabulary[normalizedWord]) {
       // 发送单词已存在消息到内容脚本
       if (tabId) {
         chrome.tabs.sendMessage(tabId, { 
           action: 'wordAlreadyExists', 
-          word: word 
+          word: normalizedWord 
         }, (response) => {
           if (chrome.runtime.lastError) {
             console.warn(`向 tab ${tabId} 发送 wordAlreadyExists 失败: ${chrome.runtime.lastError.message}`);
@@ -26,12 +29,13 @@ export function addWordToVocabulary(word, tabId) {
     }
 
     // 添加单词，使用单词本身作为键
-    vocabulary[word] = {
-      addedAt: new Date().toISOString()
+    vocabulary[normalizedWord] = {
+      addedAt: new Date().toISOString(),
+      originalWord: word // 保存原始单词形式（可选）
       // 这里可以保存更多信息，如翻译、例句等
     };
 
-    saveVocabulary(vocabulary, word, tabId);
+    saveVocabulary(vocabulary, normalizedWord, tabId);
   });
 }
 
