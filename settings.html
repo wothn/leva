@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="css/settings.css">
+</head>
+<body>
+  <div class="container">
+    <h1>设置</h1>
+    
+    <div class="setting-group">
+      <h2>高亮设置</h2>
+      <div class="setting">
+        <label for="highlight-enabled">启用高亮显示</label>
+        <input type="checkbox" id="highlight-enabled">
+      </div>
+      <div class="setting">
+        <label for="highlight-style">高亮样式</label>
+        <select id="highlight-style">
+          <option value="solid">直线</option>
+          <option value="dotted">点线</option>
+          <option value="dashed">虚线</option>
+          <option value="background">背景色</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label for="highlight-color">高亮颜色</label>
+        <input type="color" id="highlight-color" value="#FFD700">
+      </div>
+    </div>
+    
+    <div class="setting-group">
+      <h2>工具栏设置</h2>
+      <div class="setting">
+        <label for="toolbar-enabled">启用划词工具栏</label>
+        <input type="checkbox" id="toolbar-enabled">
+      </div>
+    </div>
+    
+    <div class="setting-group">
+      <h2>悬浮释义设置</h2>
+      <div class="setting">
+        <label for="tooltip-enabled">启用悬浮释义</label>
+        <input type="checkbox" id="tooltip-enabled">
+      </div>
+      <div class="setting">
+        <label for="dark-mode">深色模式</label>
+        <input type="checkbox" id="dark-mode">
+      </div>
+      <div class="setting">
+        <label for="auto-pronounce">自动发音</label>
+        <input type="checkbox" id="auto-pronounce">
+      </div>
+    </div>
+    
+    <div class="actions">
+      <button id="reset-settings">重置设置</button>
+    </div>
+  </div>
+  
+  <script src="js/settings.js"></script>
+</body>
+</html>
