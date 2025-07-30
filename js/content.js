@@ -562,6 +562,31 @@ observer.observe(document.body, {
 // ==================== 音频播放增强功能 ====================
 
 /**
+ * 下载音频文件并转换为data URL
+ * @param {string} audioUrl - 音频文件URL
+ * @returns {Promise<string>} data URL
+ */
+async function downloadAudioAsBlob(audioUrl) {
+  try {
+    // 通过background script下载音频（直接下载，不使用缓存）
+    const response = await chrome.runtime.sendMessage({
+      action: "downloadAudio",
+      audioUrl: audioUrl
+    });
+    
+    if (response && response.dataUrl) {
+      console.log('成功获取音频，大小:', response.dataUrl.length);
+      return response.dataUrl;
+    } else {
+      throw new Error(response?.error || '下载音频失败');
+    }
+  } catch (error) {
+    console.error('请求background script下载音频失败:', error);
+    return null;
+  }
+}
+
+/**
  * 尝试播放音频，支持多种备用方案
  * @param {string} audioSrc - 音频源URL
  */
@@ -615,42 +640,57 @@ function generateAudioFallbackUrls(originalUrl) {
  * @param {string} url - 音频URL
  * @returns {Promise} 播放完成的Promise
  */
-function playAudioUrl(url) {
-  return new Promise((resolve, reject) => {
-    const audio = new Audio();
-    
-    // 设置超时
-    const timeout = setTimeout(() => {
-      audio.pause();
-      reject(new Error('音频加载超时'));
-    }, 10000); // 10秒超时
-    
-    // 成功播放完成
-    audio.addEventListener('ended', () => {
-      clearTimeout(timeout);
-      resolve();
-    });
-    
-    // 播放错误
-    audio.addEventListener('error', (e) => {
-      clearTimeout(timeout);
-      const errorMsg = audio.error ? 
-        `Audio error ${audio.error.code}: ${getAudioErrorMessage(audio.error.code)}` : 
-        '未知音频错误';
-      reject(new Error(errorMsg));
-    });
-    
-    // 开始加载和播放
-    audio.src = url;
-    audio.load();
-    
-    // 尝试播放
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(error => {
+async function playAudioUrl(url) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // 如果URL来自剑桥词典，需要先下载并转换为data URL
+      let audioUrl = url;
+      if (url.includes('dictionary.cambridge.org')) {
+        console.log('下载剑桥词典音频:', url);
+        audioUrl = await downloadAudioAsBlob(url);
+        if (!audioUrl) {
+          reject(new Error('无法下载音频文件'));
+          return;
+        }
+      }
+      
+      const audio = new Audio();
+      
+      // 设置超时
+      const timeout = setTimeout(() => {
+        audio.pause();
+        reject(new Error('音频加载超时'));
+      }, 10000); // 10秒超时
+      
+      // 成功播放完成
+      audio.addEventListener('ended', () => {
         clearTimeout(timeout);
-        reject(new Error(`播放失败: ${error.message}`));
+        resolve();
       });
+      
+      // 播放错误
+      audio.addEventListener('error', (e) => {
+        clearTimeout(timeout);
+        const errorMsg = audio.error ? 
+          `Audio error ${audio.error.code}: ${getAudioErrorMessage(audio.error.code)}` : 
+          '未知音频错误';
+        reject(new Error(errorMsg));
+      });
+      
+      // 开始加载和播放
+      audio.src = audioUrl;
+      audio.load();
+      
+      // 尝试播放
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          clearTimeout(timeout);
+          reject(new Error(`播放失败: ${error.message}`));
+        });
+      }
+    } catch (error) {
+      reject(new Error(`音频处理失败: ${error.message}`));
     }
   });
 }

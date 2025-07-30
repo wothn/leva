@@ -132,6 +132,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true });
     });
     return true; // 保持消息通道开放以异步响应
+  } else if (request.action === "downloadAudio") {
+    // 代理下载音频文件（不使用缓存）
+    downloadAudioProxy(request.audioUrl).then(dataUrl => {
+      sendResponse({ dataUrl });
+    }).catch(error => {
+      console.error("音频下载失败:", error);
+      sendResponse({ dataUrl: null, error: error.message });
+    });
+    return true; // 保持消息通道开放以异步响应
   } else if (request.action === "showNotification") {
     // 显示通知
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -184,6 +193,45 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // 必须返回 undefined 或 false，除非我们明确要异步响应
   return false;
 });
+
+// 音频下载代理函数（不使用缓存）
+async function downloadAudioProxy(audioUrl) {
+  try {
+    console.log('Background script downloading audio:', audioUrl);
+    
+    const response = await fetch(audioUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`下载音频失败: ${response.status}`);
+    }
+    
+    // 转换为ArrayBuffer然后转为base64
+    const arrayBuffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // 将二进制数据转换为base64
+    let binaryString = '';
+    for (let i = 0; i < uint8Array.length; i++) {
+      binaryString += String.fromCharCode(uint8Array[i]);
+    }
+    const base64 = btoa(binaryString);
+    
+    // 根据URL推断MIME类型
+    const mimeType = audioUrl.includes('.mp3') ? 'audio/mpeg' : 
+                    audioUrl.includes('.ogg') ? 'audio/ogg' : 'audio/mpeg';
+    
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+    console.log('音频转换为data URL成功，大小:', dataUrl.length);
+    return dataUrl;
+  } catch (error) {
+    console.error('Background script下载音频失败:', error);
+    throw error;
+  }
+}
 
 // 创建离屏文档用于解析词典页面
 async function createOffscreenDocument() {

@@ -6,9 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 加载生词本
 function loadVocabulary() {
-  chrome.storage.local.get({ vocabulary: [], definitions: {} }, (result) => {
+  chrome.storage.local.get({ vocabulary: [] }, (result) => {
     const vocabulary = result.vocabulary;
-    const definitions = result.definitions;
     
     const wordList = document.getElementById('word-list');
     wordList.innerHTML = '';
@@ -37,7 +36,6 @@ function loadVocabulary() {
       listItem.innerHTML = `
         <div class="word-info">
           <span class="word">${word}</span>
-          ${definitions[word] ? `<span class="definition-preview">${definitions[word].substring(0, 50)}${definitions[word].length > 50 ? '...' : ''}</span>` : ''}
         </div>
         <button class="delete-btn" data-word="${word}" title="删除">
           <svg viewBox="0 0 24 24">
@@ -70,7 +68,7 @@ function setupEventListeners() {
   // 删除所有单词
   document.getElementById('clear-all').addEventListener('click', () => {
     if (confirm('确定要清空所有生词吗？')) {
-      chrome.storage.local.set({ vocabulary: [], definitions: {} }, () => {
+      chrome.storage.local.set({ vocabulary: [] }, () => {
         loadVocabulary();
         // 通知内容脚本更新高亮
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -130,16 +128,14 @@ function filterWords(searchTerm) {
 
 // 删除单词
 function removeWord(word) {
-  chrome.storage.local.get({ vocabulary: [], definitions: {} }, (result) => {
+  chrome.storage.local.get({ vocabulary: [] }, (result) => {
     const vocabulary = result.vocabulary;
-    const definitions = result.definitions;
     
     const index = vocabulary.indexOf(word);
     if (index > -1) {
       vocabulary.splice(index, 1);
-      delete definitions[word];
       
-      chrome.storage.local.set({ vocabulary, definitions }, () => {
+      chrome.storage.local.set({ vocabulary }, () => {
         loadVocabulary();
         // 通知内容脚本更新高亮
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
