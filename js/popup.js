@@ -86,8 +86,9 @@ function setupEventListeners() {
   
   // 清空释义缓存
   document.getElementById('clear-cache').addEventListener('click', () => {
-    chrome.storage.local.set({ definitions: {} }, () => {
-      alert('释义缓存已清空');
+    // 向background发送消息清除缓存
+    chrome.runtime.sendMessage({
+      action: "clearCache"
     });
   });
   

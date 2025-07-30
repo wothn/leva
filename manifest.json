@@ -3,7 +3,11 @@
   "name": "生词本",
   "version": "1.0",
   "description": "收集并高亮显示网页上的生词",
-  "permissions": ["storage", "contextMenus", "activeTab", "notifications", "offscreen"],
+  "permissions": ["storage", "contextMenus", "activeTab", "offscreen"],
+  "host_permissions": ["https://dictionary.cambridge.org/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; media-src 'self' https://dictionary.cambridge.org;"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

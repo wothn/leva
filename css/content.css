@@ -232,10 +232,22 @@
   color: #6b7280;
   font-size: 14px;
   line-height: 1;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 #vocabulary-tooltip .audio-btn:hover {
   color: #374151;
+  background-color: #f3f4f6;
+}
+
+#vocabulary-tooltip .audio-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#vocabulary-tooltip .audio-btn:active {
+  transform: scale(0.95);
 }
 
 #vocabulary-tooltip .audio-icon {
@@ -370,6 +382,11 @@
 
 #vocabulary-tooltip.dark .audio-btn:hover {
   color: #f3f4f6;
+  background-color: #374151;
+}
+
+#vocabulary-tooltip.dark .audio-btn:disabled {
+  opacity: 0.5;
 }
 
 #vocabulary-tooltip.dark .pos-tag {
@@ -408,13 +425,13 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: #ffffff;
   border-radius: 16px;
   margin: 20px;
 }
 
 #vocabulary-tooltip .loading-text {
-  color: #6b7280;
+  color: #1f2937;
   font-size: 14px;
   font-weight: 500;
   margin-left: 12px;
@@ -423,7 +440,6 @@
 #vocabulary-tooltip .spinner {
   border: 3px solid transparent;
   border-top: 3px solid #6366f1;
-  border-right: 3px solid #8b5cf6;
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -431,11 +447,11 @@
 }
 
 #vocabulary-tooltip.dark .loading {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: #1f2937;
 }
 
 #vocabulary-tooltip.dark .loading-text {
-  color: #94a3b8;
+  color: #f3f4f6;
 }
 
 #vocabulary-tooltip.dark .spinner {
@@ -494,9 +510,115 @@
 #vocabulary-tooltip.dark .error {
   color: #fca5a5;
   background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
-  box-shadow: 
+  box-shadow:
     0 0 0 1px rgba(252, 165, 165, 0.1),
     0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 浏览器内通知样式 */
+.vocabulary-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px 16px;
+  min-width: 250px;
+  max-width: 350px;
+  z-index: 10000;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+}
+
+.vocabulary-notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.vocabulary-notification.success {
+  border-left: 4px solid #10b981;
+  background: #f0fdf4;
+}
+
+.vocabulary-notification.info {
+  border-left: 4px solid #3b82f6;
+  background: #eff6ff;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-icon {
+  font-size: 16px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.notification-message {
+  flex: 1;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.notification-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* 深色模式下的通知样式 */
+@media (prefers-color-scheme: dark) {
+  .vocabulary-notification {
+    background: #1f2937;
+    border-color: #374151;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .vocabulary-notification.success {
+    background: #064e3b;
+    border-left-color: #10b981;
+  }
+
+  .vocabulary-notification.info {
+    background: #1e3a8a;
+    border-left-color: #3b82f6;
+  }
+
+  .notification-message {
+    color: #f3f4f6;
+  }
+
+  .notification-close {
+    color: #9ca3af;
+  }
+
+  .notification-close:hover {
+    background: #374151;
+    color: #e5e7eb;
+  }
 }
 
 #vocabulary-tooltip.dark .error::before {

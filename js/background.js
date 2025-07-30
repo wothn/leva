@@ -20,23 +20,22 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       if (!vocabulary.includes(word)) {
         vocabulary.push(word);
         chrome.storage.local.set({ vocabulary }, () => {
-          // 显示通知
-          chrome.notifications.create({
-            type: "basic",
-            iconUrl: chrome.runtime.getURL("icons/icon48.png"),
-            title: "生词本",
-            message: `已添加单词: ${word}`
+          // 发送通知到内容脚本
+          chrome.tabs.sendMessage(tab.id, {
+            action: "showNotification",
+            message: `已添加单词: ${word}`,
+            type: "success"
           });
           
           // 发送消息到内容脚本以更新高亮
           chrome.tabs.sendMessage(tab.id, { action: "updateHighlight" });
         });
       } else {
-        chrome.notifications.create({
-          type: "basic",
-          iconUrl: chrome.runtime.getURL("icons/icon48.png"),
-          title: "生词本",
-          message: `单词已在生词本中: ${word}`
+        // 发送通知到内容脚本
+        chrome.tabs.sendMessage(tab.id, {
+          action: "showNotification",
+          message: `单词已在生词本中: ${word}`,
+          type: "info"
         });
       }
     });
@@ -63,23 +62,22 @@ chrome.commands.onCommand.addListener((command, tab) => {
             if (!vocabulary.includes(word)) {
               vocabulary.push(word);
               chrome.storage.local.set({ vocabulary }, () => {
-                // 显示通知
-                chrome.notifications.create({
-                  type: "basic",
-                  iconUrl: chrome.runtime.getURL("icons/icon48.png"),
-                  title: "生词本",
-                  message: `已添加单词: ${word}`
+                // 发送通知到内容脚本
+                chrome.tabs.sendMessage(tab.id, {
+                  action: "showNotification",
+                  message: `已添加单词: ${word}`,
+                  type: "success"
                 });
                 
                 // 发送消息到内容脚本以更新高亮
                 chrome.tabs.sendMessage(tab.id, { action: "updateHighlight" });
               });
             } else {
-              chrome.notifications.create({
-                type: "basic",
-                iconUrl: chrome.runtime.getURL("icons/icon48.png"),
-                title: "生词本",
-                message: `单词已在生词本中: ${word}`
+              // 发送通知到内容脚本
+              chrome.tabs.sendMessage(tab.id, {
+                action: "showNotification",
+                message: `单词已在生词本中: ${word}`,
+                type: "info"
               });
             }
           });
@@ -134,6 +132,54 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true });
     });
     return true; // 保持消息通道开放以异步响应
+  } else if (request.action === "showNotification") {
+    // 显示通知
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs && tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          action: "showNotification",
+          message: request.message,
+          type: request.type
+        }).catch(() => {
+          // Ignore errors if content script is not available
+        });
+      }
+    });
+  } else if (request.action === "clearCache") {
+    // 清除所有以 definition_ 开头的缓存键
+    chrome.storage.local.get(null, (result) => {
+      const keysToRemove = Object.keys(result).filter(key => key.startsWith('definition_'));
+      
+      if (keysToRemove.length > 0) {
+        chrome.storage.local.remove(keysToRemove, () => {
+          // 向popup发送消息显示通知
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs && tabs[0]) {
+              chrome.tabs.sendMessage(tabs[0].id, {
+                action: "showNotification",
+                message: `已清除 ${keysToRemove.length} 个缓存项`,
+                type: "success"
+              }).catch(() => {
+                // Ignore errors if content script is not available
+              });
+            }
+          });
+        });
+      } else {
+        // 没有缓存项可清除
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs && tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: "showNotification",
+              message: "没有缓存项需要清除",
+              type: "info"
+            }).catch(() => {
+              // Ignore errors if content script is not available
+            });
+          }
+        });
+      }
+    });
   }
   // 必须返回 undefined 或 false，除非我们明确要异步响应
   return false;

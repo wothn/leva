@@ -27,6 +27,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 const CAMBRIDGE_CONFIG = {
   name: '剑桥词典',
   url: (word) => `https://dictionary.cambridge.org/dictionary/english-chinese-simplified/${word}`,
+  baseUrl: 'https://dictionary.cambridge.org',
   description: '提供中英文双语定义和例句'
 };
 
@@ -117,6 +118,29 @@ async function fetchFromCambridge(word) {
   }
 }
 
+// 修正音频URL的辅助函数
+function fixAudioUrl(url, baseUrl) {
+  if (!url) return '';
+  
+  // 如果已经是完整URL，直接返回
+  if (url.startsWith('http')) {
+    return url;
+  }
+  
+  // 处理协议相对URL
+  if (url.startsWith('//')) {
+    return `https:${url}`;
+  }
+  
+  // 处理绝对路径URL
+  if (url.startsWith('/')) {
+    return `${baseUrl}${url}`;
+  }
+  
+  // 其他情况，添加到基础URL后面
+  return `${baseUrl}/${url}`;
+}
+
 function parseCambridgeDictionary(doc, word) {
   // 检查是否找到单词
   if (doc.querySelector('.no-result, .not-found')) {
@@ -138,12 +162,24 @@ function parseCambridgeDictionary(doc, word) {
       const ukPhonetic = ukPronContainer.querySelector('.ipa.dipa')?.textContent?.trim();
       let ukAudio = '';
       
-      // 提取音频链接
-      const ukAudioElement = ukPronContainer.querySelector('audio source[type="audio/mpeg"]');
+      // 提取音频链接（从audio元素的source子元素中获取）
+      const ukAudioElement = ukPronContainer.querySelector('audio');
       if (ukAudioElement) {
-        const src = ukAudioElement.getAttribute('src');
-        if (src) {
-          ukAudio = src.startsWith('http') ? src : `https://dictionary.cambridge.org${src}`;
+        // 优先选择audio/mpeg格式，否则选择第一个可用的
+        const preferredSource = ukAudioElement.querySelector('source[type="audio/mpeg"]');
+        if (preferredSource) {
+          ukAudio = preferredSource.getAttribute('src');
+        } else {
+          const firstSource = ukAudioElement.querySelector('source');
+          if (firstSource) {
+            ukAudio = firstSource.getAttribute('src');
+          }
+        }
+        
+        // 修正音频URL确保完整
+        if (ukAudio) {
+          ukAudio = fixAudioUrl(ukAudio, CAMBRIDGE_CONFIG.baseUrl);
+          console.log('UK音频链接:', ukAudio);
         }
       }
       
@@ -163,12 +199,24 @@ function parseCambridgeDictionary(doc, word) {
       const usPhonetic = usPronContainer.querySelector('.ipa.dipa')?.textContent?.trim();
       let usAudio = '';
       
-      // 提取音频链接
-      const usAudioElement = usPronContainer.querySelector('audio source[type="audio/mpeg"]');
+      // 提取音频链接（从audio元素的source子元素中获取）
+      const usAudioElement = usPronContainer.querySelector('audio');
       if (usAudioElement) {
-        const src = usAudioElement.getAttribute('src');
-        if (src) {
-          usAudio = src.startsWith('http') ? src : `https://dictionary.cambridge.org${src}`;
+        // 优先选择audio/mpeg格式，否则选择第一个可用的
+        const preferredSource = usAudioElement.querySelector('source[type="audio/mpeg"]');
+        if (preferredSource) {
+          usAudio = preferredSource.getAttribute('src');
+        } else {
+          const firstSource = usAudioElement.querySelector('source');
+          if (firstSource) {
+            usAudio = firstSource.getAttribute('src');
+          }
+        }
+        
+        // 修正音频URL确保完整
+        if (usAudio) {
+          usAudio = fixAudioUrl(usAudio, CAMBRIDGE_CONFIG.baseUrl);
+          console.log('US音频链接:', usAudio);
         }
       }
       
@@ -418,4 +466,3 @@ async function saveToCache(word, data) {
     console.error('保存到缓存时出错:', error);
   }
 }
-

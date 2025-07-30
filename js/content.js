@@ -53,6 +53,8 @@ if (chrome.runtime && chrome.runtime.onMessage) {
       updateHighlight();
     } else if (message.action === "getSettings") {
       sendResponse(settings);
+    } else if (message.action === "showNotification") {
+      showBrowserNotification(message.message, message.type);
     }
     // Return true to indicate we will send a response asynchronously
     return true;
@@ -206,6 +208,7 @@ function createFloatingToolbar() {
 // 缓存DOM元素
 let toolbarElement = null;
 let tooltipElement = null;
+let notificationElement = null;
 
 // 显示工具栏
 function showToolbar(selection) {
@@ -386,18 +389,14 @@ function showTooltip(element, word) {
             button.disabled = true;
             
             try {
-              const audio = new Audio(audioSrc);
-              
-              const resetButton = () => {
-                button.innerHTML = originalHTML;
-                button.disabled = false;
-              };
-              
-              audio.addEventListener('ended', resetButton);
-              audio.addEventListener('error', resetButton);
-              
-              await audio.play();
+              // 尝试多种音频播放方式
+              await playAudioWithFallback(audioSrc);
             } catch (error) {
+              console.error('音频播放失败:', error);
+              // 显示错误提示
+              showAudioError(button);
+            } finally {
+              // 恢复按钮状态
               button.innerHTML = originalHTML;
               button.disabled = false;
             }
@@ -418,6 +417,50 @@ function showTooltip(element, word) {
 function hideTooltip() {
   if (tooltipElement) {
     tooltipElement.style.display = 'none';
+  }
+}
+
+// 显示浏览器内通知
+function showBrowserNotification(message, type = 'success') {
+  // 如果已存在通知，先移除
+  if (notificationElement) {
+    notificationElement.remove();
+  }
+  
+  // 创建通知元素
+  notificationElement = document.createElement('div');
+  notificationElement.className = `vocabulary-notification ${type}`;
+  notificationElement.innerHTML = `
+    <div class="notification-content">
+      <span class="notification-icon">${type === 'success' ? '✓' : 'ℹ'}</span>
+      <span class="notification-message">${message}</span>
+      <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+    </div>
+  `;
+  
+  document.body.appendChild(notificationElement);
+  
+  // 添加显示动画
+  setTimeout(() => {
+    notificationElement.classList.add('show');
+  }, 10);
+  
+  // 3秒后自动隐藏
+  setTimeout(() => {
+    hideBrowserNotification();
+  }, 3000);
+}
+
+// 隐藏浏览器内通知
+function hideBrowserNotification() {
+  if (notificationElement) {
+    notificationElement.classList.remove('show');
+    setTimeout(() => {
+      if (notificationElement) {
+        notificationElement.remove();
+        notificationElement = null;
+      }
+    }, 300);
   }
 }
 
@@ -515,3 +558,130 @@ observer.observe(document.body, {
   childList: true,
   subtree: true
 });
+
+// ==================== 音频播放增强功能 ====================
+
+/**
+ * 尝试播放音频，支持多种备用方案
+ * @param {string} audioSrc - 音频源URL
+ */
+async function playAudioWithFallback(audioSrc) {
+  const fallbackUrls = generateAudioFallbackUrls(audioSrc);
+  
+  for (let i = 0; i < fallbackUrls.length; i++) {
+    const url = fallbackUrls[i];
+    console.log(`尝试播放音频 (${i + 1}/${fallbackUrls.length}):`, url);
+    
+    try {
+      await playAudioUrl(url);
+      console.log('音频播放成功:', url);
+      return; // 成功播放，退出循环
+    } catch (error) {
+      console.warn(`音频播放失败 (${i + 1}/${fallbackUrls.length}):`, error.message);
+      
+      // 如果是最后一个URL也失败了，抛出错误
+      if (i === fallbackUrls.length - 1) {
+        throw new Error(`所有音频源都无法播放: ${error.message}`);
+      }
+    }
+  }
+}
+
+/**
+ * 生成音频备用URL列表
+ * @param {string} originalUrl - 原始音频URL
+ * @returns {string[]} 备用URL数组
+ */
+function generateAudioFallbackUrls(originalUrl) {
+  const urls = [originalUrl];
+  
+  // 如果原始URL是MP3格式，尝试OGG格式
+  if (originalUrl.includes('.mp3')) {
+    const oggUrl = originalUrl.replace('.mp3', '.ogg');
+    urls.push(oggUrl);
+  }
+  
+  // 如果原始URL是OGG格式，尝试MP3格式
+  if (originalUrl.includes('.ogg')) {
+    const mp3Url = originalUrl.replace('.ogg', '.mp3');
+    urls.push(mp3Url);
+  }
+  
+  return urls;
+}
+
+/**
+ * 播放指定URL的音频
+ * @param {string} url - 音频URL
+ * @returns {Promise} 播放完成的Promise
+ */
+function playAudioUrl(url) {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio();
+    
+    // 设置超时
+    const timeout = setTimeout(() => {
+      audio.pause();
+      reject(new Error('音频加载超时'));
+    }, 10000); // 10秒超时
+    
+    // 成功播放完成
+    audio.addEventListener('ended', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+    
+    // 播放错误
+    audio.addEventListener('error', (e) => {
+      clearTimeout(timeout);
+      const errorMsg = audio.error ? 
+        `Audio error ${audio.error.code}: ${getAudioErrorMessage(audio.error.code)}` : 
+        '未知音频错误';
+      reject(new Error(errorMsg));
+    });
+    
+    // 开始加载和播放
+    audio.src = url;
+    audio.load();
+    
+    // 尝试播放
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        clearTimeout(timeout);
+        reject(new Error(`播放失败: ${error.message}`));
+      });
+    }
+  });
+}
+
+/**
+ * 获取音频错误消息
+ * @param {number} errorCode - 错误代码
+ * @returns {string} 错误消息
+ */
+function getAudioErrorMessage(errorCode) {
+  const errorMessages = {
+    1: 'MEDIA_ERR_ABORTED - 播放被中断',
+    2: 'MEDIA_ERR_NETWORK - 网络错误',
+    3: 'MEDIA_ERR_DECODE - 解码错误',
+    4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - 音频格式不支持'
+  };
+  return errorMessages[errorCode] || `未知错误 (${errorCode})`;
+}
+
+/**
+ * 显示音频播放错误提示
+ * @param {HTMLElement} button - 音频按钮元素
+ */
+function showAudioError(button) {
+  const originalHTML = button.innerHTML;
+  button.innerHTML = '<span>❌</span>';
+  button.title = '音频播放失败，请检查网络连接';
+  
+  // 2秒后恢复
+  setTimeout(() => {
+    button.innerHTML = originalHTML;
+    button.title = '播放发音';
+  }, 2000);
+}
