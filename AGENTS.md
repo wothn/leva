@@ -1,91 +1,153 @@
+# CODEBUDDY.md This file provides guidance to CodeBuddy when working with code in this repository.
 
-# Copilot 指南
+## 项目概述
 
-## 项目架构
+这是一个 Chrome 浏览器扩展（Manifest V3），名为「生词本」，用于帮助用户在浏览网页时收集和管理生词。项目使用 TypeScript 开发，Vite 构建，CRXJS 插件打包。
 
-这是一个基于 Manifest V3 的**Chrome 扩展**，用于英语生词学习，支持单词收集、高亮和词典释义查询。扩展在多个上下文中运行，各组件之间有明确的协作。
+主要功能：
+- 通过右键菜单、快捷键（Ctrl+Shift+A）或浮动工具栏添加生词
+- 在网页上自动高亮显示生词本中的单词
+- 鼠标悬停时显示剑桥词典的英汉双语释义
+- 生词管理（搜索、删除、导出）
+- 可自定义的设置（高亮样式、深色模式等）
 
-### 核心组件
+## 常用命令
 
-- **后台 Service Worker**（`js/background.js`）：管理右键菜单、快捷键、通知和跨标签通信
-- **内容脚本**（`js/content.js`）：负责网页上的单词高亮、悬浮释义和用户交互
-- **Offscreen 隔离文档**（`js/offscreen.js`）：用于剑桥词典解析，绕过 CORS 限制
-- **弹窗界面**（`popup.html` + `js/popup.js`）：单词管理、搜索、导出和批量操作
-- **设置页面**（`settings.html` + `js/settings.js`）：用户偏好设置，支持全局实时同步
+### 开发构建
 
-### 关键工作流
-
-**词典解析流程：**
-1. 内容脚本通过 `chrome.runtime.sendMessage` 请求释义
-2. 后台脚本按需创建 offscreen 文档
-3. offscreen 文档抓取并解析剑桥词典 HTML（用特定选择器）
-4. 解析结果经消息链返回，最终在 tooltip 展示
-
-**存储策略：**
-- `vocabulary`：已收集单词数组
-- `definitionCache`：单词到解析释义的映射对象
-- 设置对象，所有上下文通过 `chrome.storage.onChanged` 实时同步
-
-**主题系统：**
-使用 CSS 变量，自动检测暗色模式。tooltip 和 popup 共享 `:root` 设计令牌。
-
-## 开发模式
-
-### CSS 架构
-- **设计系统**：`popup.css` 中的 CSS 变量作为设计令牌
-- **命名规范**：BEM 风格，带语义前缀（如 `tooltip-`、`word-`、`empty-`）
-- **响应式断点**：仅用 `@media (max-width: 350px)` 控制弹窗宽度
-- **主题变量**：亮/暗主题变量名一致，仅值不同
-
-### 消息通信
-```javascript
-// 跨上下文通信标准写法
-chrome.runtime.sendMessage({
-  target: "offscreen",
-  action: "parseDefinition", 
-  word: selectedWord
-});
+**安装依赖：**
+```bash
+npm install
 ```
 
-### 错误处理
-- 所有操作前都需检查 `chrome.runtime` 是否可用
-- 异步操作（如词典解析）需加超时保护（30 秒）
-- 权限或 API 不可用时需优雅降级
+**开发模式（热更新）：**
+```bash
+npm run dev
+```
+启动 Vite 开发服务器，自动监视文件变化并重新构建。
 
-### 剑桥词典解析
-基于 `example.html` 的真实 DOM 结构，使用如下选择器：
-- 单词：`.hw.dhw`
-- 音标：`.pron.dpron .ipa.dipa`
-- 音频：`audio source[src]`
-- 释义：`.def.ddef_d`
-- 例句：`.eg.deg`
+**生产构建：**
+```bash
+npm run build
+```
+先运行 TypeScript 编译器检查类型，然后使用 Vite 构建扩展，输出到 `dist/` 目录。
 
-## 文件组织模式
+**代码检查：**
+```bash
+npm run lint
+```
+使用 ESLint 检查 `src/` 目录下的 TypeScript 文件。
 
-- **CSS 文件**：按组件分（`popup.css`、`content.css`、`settings.css`）
-- **HTML 模板**：结构静态，内容由 JS 动态注入
-- **图标资源**：多尺寸（16/48/128px）适配不同 UI
-- **测试文件**：`example.html` 用于本地解析逻辑测试
+### 加载扩展到 Chrome
 
-## 集成点
+1. 运行 `npm run build` 生成 `dist/` 目录
+2. 打开 `chrome://extensions/`
+3. 启用「开发者模式」
+4. 点击「加载已解压的扩展程序」
+5. 选择项目根目录 `e:/Tools/leva`
 
-- **Chrome Storage API**：全扩展上下文同步设置
-- **Chrome Notifications**：单词操作用户反馈
-- **Chrome Tabs API**：生词变动时跨标签高亮同步
-- **Web Audio API**：发音播放，带多 URL 兜底
-- **Cambridge Dictionary**：直接解析 HTML，无需 API
+### 调试
 
-## 设计风格
+**调试内容脚本：** 在任意网页打开 DevTools → Sources → Content scripts → 找到 `src/content/index.ts`
 
-=**简洁现代**的设计风格：
+**调试后台脚本：** 在 `chrome://extensions/` 找到扩展卡片 → 点击「Service Worker」链接
 
-### 设计特点
-- **极简主义**：去除多余装饰，突出内容本身
-- **现代扁平化**：使用圆角边框、简洁线条和现代色彩
-- **分层清晰**：通过背景色和边框区分不同内容区域
-- **响应式适配**：支持亮色和暗色主题自动切换
+**调试弹窗：** 点击扩展图标打开弹窗 → 右键点击弹窗空白处 → 选择「检查」
 
-### 色彩方案
-- **亮色主题**：白色背景 `#ffffff`，浅灰蓝标题区 `#f8fafc`，深灰文字 `#1f2937`
-- **暗色主题**：深蓝灰背景 `#1f2937`，更深标题区 `#111827`，浅色文字 `#f3f4f6`
-- **强调色**：现代蓝紫色 `#6366f1` 用于交互元素
+**调试设置页面：** 右键点击扩展图标 → 选择「选项」→ 右键页面空白处 → 选择「检查」
+
+**调试离屏文档：** 在 Service Worker 控制台中查看 `chrome.offscreen` 相关日志
+
+### 核心架构
+
+**1. 权限与存储**
+
+使用 `chrome.storage.local` 持久化数据：
+- `vocabulary_v2`：生词列表（包含 word、addedAt、reviewCount、proficiency、tags 等字段）
+- `settings`：用户设置对象
+- `definition_<word>`：单词释义缓存（24小时过期）
+
+存储管理通过 `src/utils/storage.ts` 中的三个类实现：
+- `VocabularyStorageManager`：生词增删改查，支持从旧版数据迁移
+- `SettingsStorageManager`：设置读写，合并默认值
+- `CacheStorageManager`：缓存读写，自动过期检查
+
+**2. 组件通信模型**
+
+```
+content/ (内容脚本，在网页中运行)
+    ↕ chrome.runtime.sendMessage
+background/ (Service Worker)
+    ↕ chrome.runtime.sendMessage (target: 'offscreen')
+offscreen/ (离屏文档，用于 DOM 解析)
+```
+
+消息类型定义在 `src/types/message.ts`：
+- `getDefinition`：请求单词释义
+- `getFromCache`/`saveToCache`/`removeFromCache`：缓存操作
+- `downloadAudio`：代理下载音频文件（转为 base64 data URL）
+- `updateHighlight`：通知内容脚本更新高亮
+- `showNotification`：显示浏览器内通知
+- `clearCache`：清除所有释义缓存
+- `parseDefinition`（target: 'offscreen'）：离屏文档解析请求
+
+**3. 生词收集流程**
+
+用户触发（右键/快捷键/工具栏）→ `background/commands.ts` 或 `contextMenu.ts` 处理 → 检查重复 → 调用 `VocabularyStorageManager.addWord()` → 发送 `showNotification` 消息到 content → 发送 `updateHighlight` 通知所有标签页更新高亮
+
+**4. 高亮渲染机制**
+
+`content/highlight.ts` 使用 `TreeWalker` 遍历 DOM 文本节点，通过正则匹配生词，将匹配文本替换为带样式的 `<span class="vocabulary-highlight">`。使用 `MutationObserver` 监听 DOM 变化处理动态加载内容，带有 100ms 防抖。
+
+高亮样式通过 CSS 类和内联样式组合实现：
+- `solid`：下划线（text-decoration）
+- `dotted`/`dashed`：边框样式
+- `background`：背景色
+
+颜色通过内联 `style` 属性设置，确保用户自定义颜色生效。
+
+**5. 悬浮释义实现**
+
+鼠标悬停高亮单词 → `content/tooltip.ts` 发送 `getDefinition` 消息 → `background/messageHandler.ts` 调用 `createOffscreenDocument()` 确保离屏文档存在 → 转发到 `offscreen/index.ts` → 先查缓存，未命中则 `parser.ts` fetch 剑桥词典页面 → DOM 解析提取音标、释义、例句 → 生成 HTML 返回 → content 渲染 tooltip
+
+Tooltip 定位逻辑会智能检测屏幕边界，自动调整显示位置避免溢出。
+
+**6. 音频播放机制**
+
+剑桥词典音频受 CORS 限制，需通过 background 代理下载：
+- content 请求 `downloadAudio` → background `downloadAudioAsDataUrl()` fetch 音频 → ArrayBuffer 转 base64 → 返回 data URL → content 使用 `Audio` 元素播放
+
+**7. 词典解析器 (offscreen/parser.ts)**
+
+基于剑桥词典页面真实 DOM 结构编写，主要解析逻辑：
+- 英音/美音音标：`.uk.dpron-i` / `.us.dpron-i` 中的 `.ipa.dipa`
+- 音频链接：从 `<audio>` 元素的 `<source>` 中提取
+- 词性：`.pos.dpos`
+- 释义：`.def-block.ddef_block` 中的 `.def.ddef_d`
+- 中文翻译：`.trans.dtrans.dtrans-se`
+- 例句：`.examp.dexamp` 中的 `.eg.deg`（英文）和 `.trans.dtrans`（中文）
+
+解析结果通过 `generateResultHTML()` 生成 HTML 字符串返回给 content 渲染。
+
+**8. 设置系统**
+
+默认设置定义在 `src/types/settings.ts` 的 `DEFAULT_SETTINGS` 对象中：
+- `highlightEnabled`：是否启用高亮
+- `highlightStyle`：高亮样式（solid/dotted/dashed/background）
+- `highlightColor`：高亮颜色
+- `toolbarEnabled`：是否显示划词工具栏
+- `tooltipEnabled`：是否启用悬浮释义
+- `darkMode`：深色模式
+- `autoPronounce`：自动发音
+
+设置变更通过 `chrome.storage.onChanged` 事件监听，在 `content/index.ts` 中实时同步到所有标签页。
+
+### 关键注意事项
+
+1. **Manifest V3 限制**：后台脚本为 Service Worker，不可直接操作 DOM，需通过 Offscreen API 创建离屏文档进行网页解析
+2. **CORS 处理**：剑桥词典音频资源需通过 background.js 代理下载，不能直接在内容脚本中 fetch
+3. **缓存过期**：释义缓存默认 24 小时过期，过期后自动清除
+4. **消息通道**：异步消息处理需返回 `true` 保持通道开放
+5. **扩展上下文检查**：发送消息前需检查 `chrome.runtime` 是否有效，避免扩展更新后出错
+6. **TypeScript 严格模式**：项目启用严格类型检查，确保类型安全
+7. **禁止Any**：禁止使用 `any` 类型，确保类型安全
